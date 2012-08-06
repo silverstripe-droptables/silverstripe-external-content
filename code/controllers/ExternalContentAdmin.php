@@ -360,12 +360,6 @@ class ExternalContentAdmin extends LeftAndMain implements CurrentPageIdentifier,
 		$record->ParentID = $parent;
 		$record->Name = $record->Title = $name;
 
-		// if (isset($_REQUEST['returnID'])) {
-		// 	return $p->ID;
-		// } else {
-		// 	return $this->returnItemToUser($p);
-		// }
-
 		try {
 			$record->write();
 		} catch(ValidationException $ex) {
@@ -373,52 +367,23 @@ class ExternalContentAdmin extends LeftAndMain implements CurrentPageIdentifier,
 			return $this->getResponseNegotiator()->respond($this->request);
 		}
 
-		singleton('CMSPageEditController')->setCurrentPageID($record->ID);
+		$this->setCurrentPageID($record->ID);
 
+		Session::set("FormInfo.Form_EditForm.formError.type", 'good');
 		Session::set(
 			"FormInfo.Form_EditForm.formError.message", 
 			sprintf(_t('ExternalContent.SourceAdded', 'Successfully created %s'), $type)
 		);
-		Session::set("FormInfo.Form_EditForm.formError.type", 'good');
-
-		$this->response->addHeader('X-Status', rawurlencode(_t('ExternalContent.PROVIDERADDED', "New $type created.")));
-		return $this->getResponseNegotiator()->respond($this->request);
+		
+		return $this->redirect($this->Link('show/' . $record->ID));
 	}
 
 
-
 	/**
-	 * Copied from AssetAdmin... 
-	 * 
-	 * @return Form
-	 */
-	function DeleteItemsForm() {
-		$form = new Form(
-						$this,
-						'DeleteItemsForm',
-						new FieldList(
-								new LiteralField('SelectedPagesNote',
-										sprintf('<p>%s</p>', _t('ExternalContentAdmin.SELECT_CONNECTORS', 'Select the connectors that you want to delete and then click the button below'))
-								),
-								new HiddenField('csvIDs')
-						),
-						new FieldList(
-								new FormAction('deleteprovider', _t('ExternalContentAdmin.DELCONNECTORS', 'Delete the selected connectors'))
-						)
-		);
-
-		$form->addExtraClass('actionparams');
-
-		return $form;
-	}
-
-	/**
-	 * Delete a folder
+	 * Delete a provider
 	 */
 	public function deleteprovider() {
-		$script = '';
 		$ids = split(' *, *', $_REQUEST['csvIDs']);
-		$script = '';
 
 		if (!$ids)
 			return false;
@@ -436,13 +401,21 @@ class ExternalContentAdmin extends LeftAndMain implements CurrentPageIdentifier,
 
 		$size = sizeof($ids);
 		if ($size > 1) {
-			$message = $size . ' ' . _t('AssetAdmin.FOLDERSDELETED', 'folders deleted.');
+			$message = $size . ' ' . _t('ExternalContent.PROVIDERDELETED', 'provider deleted.');
 		} else {
-			$message = $size . ' ' . _t('AssetAdmin.FOLDERDELETED', 'folder deleted.');
+			$message = $size . ' ' . _t('ExternalContent.PROVIDERDELETED', 'provider deleted.');
 		}
 
-		$script .= "statusMessage('$message');";
-		echo $script;
+		Session::set("FormInfo.Form_EditForm.formError.type", 'good');
+		Session::set(
+			"FormInfo.Form_EditForm.formError.message", 
+			$message
+		);
+
+		// TODO redirecting does not seem to behave the same here
+		// should reload the form & tree live addprovider does...
+		$this->setCurrentPageID('root'); 
+		return $this->redirect($this->Link());
 	}
 
 
@@ -516,6 +489,48 @@ class ExternalContentAdmin extends LeftAndMain implements CurrentPageIdentifier,
 		$css .= "li.type-file > a .jstree-pageicon { background: transparent url('framework/admin/images/sitetree_ss_pageclass_icons_default.png') 0 0 no-repeat; }\n}";
 
 		return $css;
+	}
+
+
+	/**
+	 * Overridden as LeftAndMain::updatetreenodes assumes Sort field on data object
+	 * @return String JSON
+	 */
+	public function updatetreenodes($request) {
+		if(!$ids = $request->getVar('ids')){
+			// TODO requests are coming through on delete to update the tree, but they don't have the ID!
+			// Because the form has already been deleted
+			return Convert::raw2json(array());
+		}
+
+		$data = array();
+		$ids = explode(',', $ids);		
+
+		foreach($ids as $id) {
+			$record = $this->getRecord($id);
+			$recordController = ($this->stat('tree_class') == 'SiteTree') ?  singleton('CMSPageEditController') : $this;
+
+			
+			$next = $prev = null;
+
+			$className = $this->stat('tree_class');
+			$next = DataObject::get($className, 'ParentID = '.$record->ParentID.' AND ID > '.$record->ID)->first();
+			if (!$next) {
+				$prev = DataObject::get($className, 'ParentID = '.$record->ParentID.' AND ID < '.$record->ID)->reverse()->first();
+			}
+
+			$link = Controller::join_links($recordController->Link("show"), $record->ID);
+			$html = LeftAndMain_TreeNode::create($record, $link, $this->isCurrentPage($record))->forTemplate() . '</li>';
+
+			$data[$id] = array(
+				'html' => $html, 
+				'ParentID' => $record->ParentID,
+				'NextID' => $next ? $next->ID : null,
+				'PrevID' => $prev ? $prev->ID : null
+			);
+		}
+		$this->response->addHeader('Content-Type', 'text/json');
+		return Convert::raw2json($data);
 	}
 
 }
