@@ -86,7 +86,7 @@ class ExternalTreeDropdownField extends TreeDropdownField {
 				}
 		}
 
-		$eval = '"<li id=\"selector-' . $this->getName() . '-{$child->' . $this->keyField . '}\" class=\"$child->class"' .
+		$eval = '"<li id=\"selector-' . $this->getName() . '-{$child->' . $this->keyField . '}\" data-id=\"$child->' . $this->keyField . '\" class=\"class-$child->class"' .
 				' . $child->markingClasses() . "\"><a rel=\"$child->ID\">" . $child->' . $this->labelField . ' . "</a>"';
 
 		if ($isSubTree) {
