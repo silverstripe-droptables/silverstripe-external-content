@@ -1,5 +1,5 @@
 * Tree in the External Content admin gets shakey when there is more than one external content source
-* ExternalContentPage: selecteding external content source does not save the source id. Also the site tree dropdown shows an infinate hierarchy of the same content sources
+* ExternalContentPage: The site tree dropdown shows an infinate hierarchy of the same content sources
 
 * Add search filtering at the connector level 
 * Add ability to search through the connector
