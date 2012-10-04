@@ -154,14 +154,6 @@ class ExternalContentItem extends DataObject {
 	}
 
 	/**
-	 * Get the title to use in a tree
-	 * @return String
-	 */
-	function TreeTitle() {
-		return $this->Name;
-	}
-
-	/**
 	 * Where this can be downloaded from
 	 * 
 	 * @return string

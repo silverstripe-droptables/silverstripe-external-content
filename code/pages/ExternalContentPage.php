@@ -88,7 +88,7 @@ class ExternalContentPage extends Page {
 	 */
 	public function Children() {
 		$item = $this->ContentItem();
-		return $item ? $item->stageChildren() : new DataList();
+		return $item ? $item->stageChildren() : null;
 	}
 
 }

@@ -38,9 +38,20 @@ class ExternalTreeDropdownField extends TreeDropdownField {
 	 * @return string
 	 */
 	public function tree(SS_HTTPRequest $request) {
+		// Array sourceObject is an explicit list of values - construct a "flat tree"
+		if(is_array($this->sourceObject)) {
+			$output = "<ul class=\"tree\">\n";
+			foreach($this->sourceObject as $k => $v) {
+				$output .= '<li id="selector-' . $this->name . '-' . $k  . '"><a>' . $v . '</a>';
+			}
+			$output .= "</ul>";
+			return $output;
+		}
+
 		$isSubTree = false;
 
-		$ID = $request->param('ID');
+		$ID = (is_numeric($request->latestparam('ID'))) ? (int)$request->latestparam('ID') : (int)$request->requestVar('ID');
+		
 		if ($ID && ExternalContentAdmin::isValidId($ID)) {
 
 			$obj = ExternalContent::getDataObjectFor($ID);
@@ -75,7 +86,7 @@ class ExternalTreeDropdownField extends TreeDropdownField {
 				}
 		}
 
-		$eval = '"<li id=\"selector-' . $this->Name() . '-{$child->' . $this->keyField . '}\" class=\"$child->class"' .
+		$eval = '"<li id=\"selector-' . $this->getName() . '-{$child->' . $this->keyField . '}\" class=\"$child->class"' .
 				' . $child->markingClasses() . "\"><a rel=\"$child->ID\">" . $child->' . $this->labelField . ' . "</a>"';
 
 		if ($isSubTree) {

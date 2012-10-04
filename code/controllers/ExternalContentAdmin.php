@@ -107,7 +107,7 @@ class ExternalContentAdmin extends LeftAndMain implements CurrentPageIdentifier,
 			$message = _t('ExternalContent.NOITEMSELECTED', 'No item selected to import.');
 		}
 
-		if(!$migrationTarget || !$fileMigrationTarget){
+		if(!$migrationTarget && !$fileMigrationTarget){
 			$messageType = 'bad';
 			$message = _t('ExternalContent.NOTARGETSELECTED', 'No target to import to selected.');
 		}
@@ -134,7 +134,7 @@ class ExternalContentAdmin extends LeftAndMain implements CurrentPageIdentifier,
 			} else {
 				$importer = null;
 				$importer = $from->getContentImporter($targetType);
-
+				
 				if ($importer) {
 					$importer->import($from, $target, $includeSelected, $includeChildren, $duplicates, $request);
 				}
@@ -392,7 +392,6 @@ class ExternalContentAdmin extends LeftAndMain implements CurrentPageIdentifier,
 			if (is_numeric($id)) {
 				$record = ExternalContent::getDataObjectFor($id);
 				if ($record) {
-					$script .= $this->deleteTreeNodeJS($record);
 					$record->delete();
 					$record->destroy();
 				}
@@ -503,31 +502,22 @@ class ExternalContentAdmin extends LeftAndMain implements CurrentPageIdentifier,
 			return Convert::raw2json(array());
 		}
 
+		// TODO this does not take into consideration the children of this node, needs to be fixed in 
+		// LeftAndMain::updatetreenodes too
+
 		$data = array();
 		$ids = explode(',', $ids);		
 
 		foreach($ids as $id) {
-			$record = $this->getRecord($id);
-			$recordController = ($this->stat('tree_class') == 'SiteTree') ?  singleton('CMSPageEditController') : $this;
-
-			
-			$next = $prev = null;
-
-			$className = $this->stat('tree_class');
-			$next = DataObject::get($className, 'ParentID = '.$record->ParentID.' AND ID > '.$record->ID)->first();
-			if (!$next) {
-				$prev = DataObject::get($className, 'ParentID = '.$record->ParentID.' AND ID < '.$record->ID)->reverse()->first();
+			if($record = $this->getRecord($id)){
+				$recordController = $this;
+				$link = Controller::join_links($recordController->Link("show"), $record->ID);
+				$html = LeftAndMain_TreeNode::create($record, $link, $this->isCurrentPage($record))->forTemplate() . '</li>';
+				$data[$id] = array(
+					'html' => $html, 
+					'ParentID' => $record->ParentID
+				);
 			}
-
-			$link = Controller::join_links($recordController->Link("show"), $record->ID);
-			$html = LeftAndMain_TreeNode::create($record, $link, $this->isCurrentPage($record))->forTemplate() . '</li>';
-
-			$data[$id] = array(
-				'html' => $html, 
-				'ParentID' => $record->ParentID,
-				'NextID' => $next ? $next->ID : null,
-				'PrevID' => $prev ? $prev->ID : null
-			);
 		}
 		$this->response->addHeader('Content-Type', 'text/json');
 		return Convert::raw2json($data);

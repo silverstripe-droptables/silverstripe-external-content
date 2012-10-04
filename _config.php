@@ -1,12 +1,9 @@
 <?php
 
-Director::addRules(60, array(
+Director::addRules(100, array(
 	'extadmin' => 'ExternalContentAdmin',
 	'extcon' => 'ExternalContentPage_Controller',
 ));
-
-// enable this for older versions  of 2.4 and disable the extension
-// Object::useCustomClass('HtmlEditorField_Toolbar', 'ExternalHtmlEditorField_Toolbar');
 
 Object::add_extension('HtmlEditorField_Toolbar', 'ExternalContentHtmlEditorExtension');
 
