@@ -38,7 +38,9 @@ class ExternalContentAdmin extends LeftAndMain implements CurrentPageIdentifier,
 		'migrate',
 		'download',
 		'view',
-		'treeview'
+		'treeview',
+		'EditForm',
+		'AddForm'
 	);
 
 
